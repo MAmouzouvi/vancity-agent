@@ -5,9 +5,8 @@ and tell me where they improved, declined, and why
 1. Category 1: Financial Performance
 **For analyst-level questions**
 
-- Give me the key financial figures from 2023 and 2024 and identify where there were improvements or declines
-- What were the main drivers of revenue growth in 2023 and 2024, and how did they compare to previous years?
-- What was Vancity's total assets, revenue, and net income in 2024?
+- What was Vancity's total revenue in 2024?
+- How did Vancity's net income from 2023 to 2024?
 
 2. Category 2: Responsible AI & Strategy
 - What AI or technology initiatives did Vancity pursue in 2024?

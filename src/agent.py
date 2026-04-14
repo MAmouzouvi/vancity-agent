@@ -109,7 +109,7 @@ def agent_answer(question: str, index, chunks: list[str], on_token=None, history
         for attempt in range(max_retries):
             try:
                 with client.messages.stream(
-                        model="claude-sonnet-4-6",
+                        model="claude-haiku-4-5-20251001",
                         max_tokens=4096,
                         system=SYSTEM_PROMPT,
                         messages=conversation
