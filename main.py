@@ -7,7 +7,12 @@ from src.chunker import split_chunks
 from src.vector_store import build_vector_store, load_vector_store, index_exists
 from src.agent import agent_answer
 
-def main():
+def initialize_backend():
+    """
+    Loads documents and builds/loads the vector index.
+    Returns (index, chunks) tuple.
+    Used by both CLI and Streamlit frontend.
+    """
 
     if index_exists():
         print("\n=== Loading saved index (instant) ===\n")
@@ -65,6 +70,12 @@ def main():
 """
         chunks = split_chunks(combined_text)
         index, chunks = build_vector_store(chunks)
+
+    return index, chunks
+
+
+def main():
+    index, chunks = initialize_backend()
 
     # ── Question Loop ────────────────────────────────────
     print("\n=== Vancity Research Agent Ready ===")

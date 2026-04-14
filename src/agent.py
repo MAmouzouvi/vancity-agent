@@ -62,7 +62,7 @@ Trend or strategic question:
 2. If a figure appears in results, cite which document it came from
 3. If you cannot find something after 2 searches, explicitly say:
    "This information was not found in the available documents"
-4. Never guess, estimate, or use outside knowledge about Vancity
+4. Never guess, estimate, or use outside knowledge about Vancity. Only use the provided documents.
 5. Do not search more than 3 times — answer with what you have by then
 
 ## OUTPUT FORMAT
@@ -83,13 +83,16 @@ Which documents the answer is based on.
 One sentence explaining why."""
 
 
-def agent_answer(question: str, index, chunks: list[str]) -> dict:
+def agent_answer(question: str, index, chunks: list[str], on_token=None, history: list[dict] | None = None) -> dict:
     """
     Runs the agent loop with streaming so answers feel instant.
+    on_token: optional callback(str) called for each streamed token (used by Streamlit).
+    history: list of {"role": "user"|"assistant", "content": str} from prior turns.
     """
-    conversation = []
+    conversation = list(history) if history else []
     steps_log = []
     max_steps = 10
+    last_claude_output = ""
 
     conversation.append({
         "role": "user",
@@ -106,13 +109,15 @@ def agent_answer(question: str, index, chunks: list[str]) -> dict:
         for attempt in range(max_retries):
             try:
                 with client.messages.stream(
-                        model="claude-haiku-4-5",
-                        max_tokens=2048,
+                        model="claude-sonnet-4-6",
+                        max_tokens=4096,
                         system=SYSTEM_PROMPT,
                         messages=conversation
                 ) as stream:
                     for text in stream.text_stream:
-                        print(text, end="", flush=True)  # prints word by word
+                        print(text, end="", flush=True)
+                        if on_token:
+                            on_token(text)
                         claude_output += text
 
                 break  # success, exit retry loop
@@ -134,6 +139,7 @@ def agent_answer(question: str, index, chunks: list[str]) -> dict:
                     raise  # re-raise other errors
 
         print()  # newline after streaming ends
+        last_claude_output = claude_output
 
         conversation.append({
             "role": "assistant",
@@ -146,7 +152,7 @@ def agent_answer(question: str, index, chunks: list[str]) -> dict:
             steps_log.append(f"Step {step + 1}: Searched → '{query}'")
             print(f"\n🔍 Searching: '{query}'...")
 
-            results = search(query, index, chunks, top_k=5)
+            results = search(query, index, chunks, top_k=8)
             context = "\n\n---\n\n".join(results)
 
             conversation.append({
@@ -165,8 +171,17 @@ def agent_answer(question: str, index, chunks: list[str]) -> dict:
                 "total_steps": step + 1
             }
 
+        else:
+            # Claude responded without SEARCH: or ANSWER: — treat it as the final answer
+            steps_log.append(f"Step {step + 1}: Generated answer")
+            return {
+                "answer": claude_output.strip(),
+                "steps": steps_log,
+                "total_steps": step + 1
+            }
+
     return {
-        "answer": "Agent reached max steps. Try asking about a more specific figure.",
+        "answer": last_claude_output.strip() or "Agent reached max steps. Try asking about a more specific figure.",
         "steps": steps_log,
         "total_steps": max_steps
     }
